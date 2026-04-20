@@ -1,0 +1,41 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Generated evidence artifacts
+.artifacts/
+
+# Logs and local outputs
+*.log
+
+# Common credential file patterns
+*-key.json
+service-account*.json
+
+# OS files
+.DS_Store
+Thumbs.db
