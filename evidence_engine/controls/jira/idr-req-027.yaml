@@ -1,0 +1,20 @@
+id: DISASTER_RECOVERY_PLAN_AND_REPORT
+request_id: IDR-Req-027
+
+name: Disaster recovery plan and report
+description: Retrieve evidence of disaster recovery planning and reporting.
+
+connector: jira
+operation: search_issues
+
+scope:
+  jql: 'summary ~ "disaster recovery" OR summary ~ "DR report" ORDER BY updated DESC'
+
+expected:
+  minimum_results: 1
+
+evidence:
+  requires_screenshot: true
+  severity: high
+  category: disaster_recovery
+

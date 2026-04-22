@@ -113,6 +113,55 @@ The GCP connector is intentionally minimal in v1. It currently returns basic pro
 uv run trace360 collect gcp --query "project metadata snapshot"
 ```
 
+## Jira Control YAML Usage
+
+Jira controls can be defined as YAML files under [evidence_engine/controls/jira](C:\Users\akars\Desktop\mydata\vibecoding\trace360\evidence_engine\controls\jira).
+
+Each Jira control uses this shape:
+
+```yaml
+id: DISASTER_RECOVERY_PLAN_AND_REPORT
+request_id: IDR-Req-027
+
+name: Disaster recovery plan and report
+description: Retrieve evidence of disaster recovery planning and reporting.
+
+connector: jira
+operation: search_issues
+
+scope:
+  jql: 'summary ~ "disaster recovery" OR summary ~ "DR report" ORDER BY updated DESC'
+
+expected:
+  minimum_results: 1
+
+evidence:
+  requires_screenshot: true
+  severity: high
+  category: disaster_recovery
+```
+
+Run one Jira control:
+
+```bash
+uv run trace360 collect-control evidence_engine\controls\jira\idr-req-027.yaml --storage local
+```
+
+Run one Jira control and upload artifacts to GCS:
+
+```bash
+uv run trace360 collect-control evidence_engine\controls\jira\idr-req-027.yaml --storage bucket
+```
+
+The control command:
+
+- loads the YAML file
+- reads `scope.jql`
+- calls the Jira connector
+- writes normal evidence artifacts
+- evaluates `expected.minimum_results`
+- returns `passed: true` or `passed: false`
+
 ## CLI Options
 
 Current supported options:

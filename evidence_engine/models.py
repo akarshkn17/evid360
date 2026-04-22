@@ -27,6 +27,7 @@ class EvidenceRequest(BaseModel):
     output_dir: str | None = None
     expand_fields: list[str] = Field(default_factory=list)
     page_size: int | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("connector")
     @classmethod
@@ -122,4 +123,3 @@ class RunContext(BaseModel):
     @property
     def started_at_iso(self) -> str:
         return self.started_at.isoformat()
-

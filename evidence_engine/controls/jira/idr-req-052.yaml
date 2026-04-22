@@ -1,0 +1,20 @@
+id: DATA_RESTORATION_PROCEDURES
+request_id: IDR-Req-052
+
+name: Data restoration procedures
+description: Retrieve evidence of data restoration procedures.
+
+connector: jira
+operation: search_issues
+
+scope:
+  jql: 'summary ~ "restore procedure" OR summary ~ "data restoration" ORDER BY updated DESC'
+
+expected:
+  minimum_results: 1
+
+evidence:
+  requires_screenshot: true
+  severity: high
+  category: disaster_recovery
+

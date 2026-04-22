@@ -25,3 +25,6 @@ class ArtifactError(EvidenceEngineError):
 class StorageError(EvidenceEngineError):
     """Raised when artifact storage fails."""
 
+
+class ControlError(EvidenceEngineError):
+    """Raised when a control definition cannot be loaded or executed."""

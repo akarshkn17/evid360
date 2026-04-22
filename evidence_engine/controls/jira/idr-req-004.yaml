@@ -1,0 +1,20 @@
+id: ONBOARDING_REEQUEST
+request_id: IDR-Req-004
+
+name: User onboarding in given period
+description: Retrieve evidence of users onboarded..
+
+connector: jira
+operation: search_issues
+
+scope:
+  jql: 'summary ~ "onboarding" OR summary ~ "offboarding" ORDER BY updated DESC'
+
+expected:
+  minimum_results: 1
+
+evidence:
+  requires_screenshot: true
+  severity: high
+  category: change_request
+

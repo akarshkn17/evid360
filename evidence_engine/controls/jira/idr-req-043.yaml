@@ -1,0 +1,20 @@
+id: ACCESS_DELETION_REQUESTS
+request_id: IDR-Req-043
+
+name: Access deletion requests
+description: Retrieve and review evidence of access deletion requests.
+
+connector: jira
+operation: search_issues
+
+scope:
+  jql: 'project = "ITOPS" AND summary ~ "access deletion" ORDER BY updated DESC'
+
+expected:
+  minimum_results: 1
+
+evidence:
+  requires_screenshot: true
+  severity: medium
+  category: access_control
+

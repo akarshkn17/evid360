@@ -29,6 +29,9 @@ dist/
 # Generated evidence artifacts
 .artifacts/
 
+# External reference work copied locally
+Template/
+
 # Logs and local outputs
 *.log
 

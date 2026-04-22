@@ -1,0 +1,19 @@
+id: CHANGE_REQUEST_AND_RISK_UPDATE_LOGS
+request_id: IDR-Req-157
+
+name: Change request and risk update logs
+description: Retrieve evidence of change requests and risk update logs.
+
+connector: jira
+operation: search_issues
+
+scope:
+  jql: 'summary ~ "change request" OR summary ~ "risk update" ORDER BY updated DESC'
+
+expected:
+  minimum_results: 1
+
+evidence:
+  requires_screenshot: true
+  severity: medium
+  category: governance
