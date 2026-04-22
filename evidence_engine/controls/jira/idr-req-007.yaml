@@ -1,0 +1,23 @@
+id: JSM_ASSETS_INVENTORY
+request_id: IDR-Req-007
+
+name: Jira Service Management assets inventory
+description: Retrieve all Jira Service Management Assets objects for the configured object type.
+
+connector: jira
+operation: fetch_assets
+
+scope:
+  schema_id: 4
+  object_type_id: 34
+  aql: 'objectTypeId = 34'
+  include_attributes: true
+
+expected:
+  minimum_results: 1
+
+evidence:
+  requires_screenshot: false
+  severity: high
+  category: asset_inventory
+  audit_note: "Validate that the JSM Assets inventory can be exported with attributes for review."

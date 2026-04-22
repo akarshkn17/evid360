@@ -1,6 +1,17 @@
-from evidence_engine.controls.loader import load_control, load_controls
-from evidence_engine.controls.models import ControlDefinition, ControlRunResult
-from evidence_engine.controls.runner import ControlRunner
+from evidence_engine.controls.jira import (
+    JiraControlDefinition,
+    JiraControlRunner,
+    JiraControlRunResult,
+    load_jira_control,
+    load_jira_controls,
+    run_jira_control,
+)
 
-__all__ = ["ControlDefinition", "ControlRunResult", "ControlRunner", "load_control", "load_controls"]
-
+__all__ = [
+    "JiraControlDefinition",
+    "JiraControlRunner",
+    "JiraControlRunResult",
+    "load_jira_control",
+    "load_jira_controls",
+    "run_jira_control",
+]

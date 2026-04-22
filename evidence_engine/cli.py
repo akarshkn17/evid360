@@ -6,10 +6,10 @@ from pathlib import Path
 import typer
 from pydantic import ValidationError
 
-from evidence_engine.controls.runner import ControlRunner
+from evidence_engine.controls.jira import JiraControlRunner
 from evidence_engine.engine import EvidenceEngine
 from evidence_engine.exceptions import EvidenceEngineError
-from evidence_engine.models import EvidenceRequest
+from evidence_engine.models import EvidenceRequest, EvidenceRunResult
 
 app = typer.Typer(help="Evidence collection engine CLI.")
 
@@ -41,23 +41,9 @@ def collect(
         )
         result = EvidenceEngine().run(request)
     except (ValidationError, EvidenceEngineError) as exc:
-        typer.echo(f"error: {exc}", err=True)
-        raise typer.Exit(code=1) from exc
+        _exit_with_error(exc)
 
-    typer.echo(
-        json.dumps(
-            {
-                "run_id": result.run_id,
-                "connector": result.connector,
-                "record_count": result.record_count,
-                "storage_backend": result.storage_backend,
-                "artifact_dir": result.artifact_dir,
-                "artifacts": result.artifact_paths,
-                "storage_locations": result.storage_locations,
-            },
-            indent=2,
-        )
-    )
+    _print_json(_run_result_payload(result))
 
 
 @app.command("collect-control")
@@ -68,33 +54,47 @@ def collect_control(
     output_dir: str | None = typer.Option(None, "--output-dir", help="Override the local artifact root."),
 ) -> None:
     try:
-        result = ControlRunner().run_file(
+        result = JiraControlRunner().run_file(
             control_file,
             output_formats=format,
             storage_backend=storage,
             output_dir=output_dir,
         )
     except (ValidationError, EvidenceEngineError) as exc:
-        typer.echo(f"error: {exc}", err=True)
-        raise typer.Exit(code=1) from exc
+        _exit_with_error(exc)
 
-    typer.echo(
-        json.dumps(
-            {
-                "control_id": result.control_id,
-                "request_id": result.request_id,
-                "name": result.name,
-                "passed": result.passed,
-                "record_count": result.record_count,
-                "minimum_results": result.minimum_results,
-                "run_id": result.evidence_result.run_id,
-                "artifact_dir": result.evidence_result.artifact_dir,
-                "artifacts": result.evidence_result.artifact_paths,
-                "storage_locations": result.evidence_result.storage_locations,
-            },
-            indent=2,
-        )
+    _print_json(
+        {
+            "control_id": result.control_id,
+            "request_id": result.request_id,
+            "name": result.name,
+            "passed": result.passed,
+            "record_count": result.record_count,
+            "minimum_results": result.minimum_results,
+            **_run_result_payload(result.evidence_result),
+        }
     )
+
+
+def _run_result_payload(result: EvidenceRunResult) -> dict[str, object]:
+    return {
+        "run_id": result.run_id,
+        "connector": result.connector,
+        "record_count": result.record_count,
+        "storage_backend": result.storage_backend,
+        "artifact_dir": result.artifact_dir,
+        "artifacts": result.artifact_paths,
+        "storage_locations": result.storage_locations,
+    }
+
+
+def _print_json(payload: dict[str, object]) -> None:
+    typer.echo(json.dumps(payload, indent=2))
+
+
+def _exit_with_error(exc: Exception) -> None:
+    typer.echo(f"error: {exc}", err=True)
+    raise typer.Exit(code=1) from exc
 
 
 if __name__ == "__main__":

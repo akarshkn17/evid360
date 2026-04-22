@@ -60,6 +60,118 @@ class JiraClient:
             "fields": fields,
         }
 
+    def fetch_assets(
+        self,
+        *,
+        aql: str,
+        page_size: int,
+        include_attributes: bool = True,
+        schema_id: int | None = None,
+        object_type_id: int | None = None,
+        workspace_id: str | None = None,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        with httpx.Client(
+            base_url=self._config.base_url,
+            auth=(self._config.email, self._config.api_token),
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            timeout=self._timeout_seconds,
+        ) as client:
+            resolved_workspace_id = workspace_id or self._get_assets_workspace_id(client)
+            schema = self._get_assets_schema(client, resolved_workspace_id, schema_id) if schema_id else None
+            object_type = (
+                self._get_assets_object_type(client, resolved_workspace_id, object_type_id) if object_type_id else None
+            )
+            objects, page_count = self._fetch_assets_objects(
+                client,
+                workspace_id=resolved_workspace_id,
+                aql=aql,
+                page_size=page_size,
+                include_attributes=include_attributes,
+            )
+
+        return objects, {
+            "asset_count": len(objects),
+            "page_count": page_count,
+            "page_size": page_size,
+            "workspace_id": resolved_workspace_id,
+            "schema_id": schema_id,
+            "object_type_id": object_type_id,
+            "aql": aql,
+            "include_attributes": include_attributes,
+            "schema": schema,
+            "object_type": object_type,
+        }
+
+    def _get_assets_workspace_id(self, client: httpx.Client) -> str:
+        response = self._request_with_retry(client, "GET", "/rest/servicedeskapi/assets/workspace")
+        values = response.json().get("values", [])
+        if not values or not values[0].get("workspaceId"):
+            raise CollectionError("No Jira Service Management Assets workspace was found")
+        return values[0]["workspaceId"]
+
+    def _get_assets_schema(
+        self,
+        client: httpx.Client,
+        workspace_id: str,
+        schema_id: int | None,
+    ) -> dict[str, Any] | None:
+        if schema_id is None:
+            return None
+        response = self._request_with_retry(
+            client,
+            "GET",
+            f"/gateway/api/jsm/assets/workspace/{workspace_id}/v1/objectschema/{schema_id}",
+        )
+        return response.json()
+
+    def _get_assets_object_type(
+        self,
+        client: httpx.Client,
+        workspace_id: str,
+        object_type_id: int | None,
+    ) -> dict[str, Any] | None:
+        if object_type_id is None:
+            return None
+        response = self._request_with_retry(
+            client,
+            "GET",
+            f"/gateway/api/jsm/assets/workspace/{workspace_id}/v1/objecttype/{object_type_id}",
+        )
+        return response.json()
+
+    def _fetch_assets_objects(
+        self,
+        client: httpx.Client,
+        *,
+        workspace_id: str,
+        aql: str,
+        page_size: int,
+        include_attributes: bool,
+    ) -> tuple[list[dict[str, Any]], int]:
+        objects: list[dict[str, Any]] = []
+        start_at = 0
+        page_count = 0
+        while True:
+            response = self._request_with_retry(
+                client,
+                "POST",
+                f"/gateway/api/jsm/assets/workspace/{workspace_id}/v1/object/aql",
+                params={
+                    "startAt": start_at,
+                    "maxResults": page_size,
+                    "includeAttributes": str(include_attributes).lower(),
+                },
+                json={"qlQuery": aql},
+            )
+            body = response.json()
+            batch = body.get("values", [])
+            objects.extend(batch)
+            page_count += 1
+            if not batch or body.get("isLastPage", False):
+                break
+            start_at += len(batch)
+        return objects, page_count
+
     def _request_with_retry(self, client: httpx.Client, method: str, url: str, **kwargs: Any) -> httpx.Response:
         for attempt in range(1, self._max_retries + 2):
             try:

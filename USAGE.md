@@ -147,6 +147,19 @@ Run one Jira control:
 uv run trace360 collect-control evidence_engine\controls\jira\idr-req-027.yaml --storage local
 ```
 
+Run the JSM Assets inventory control:
+
+```bash
+uv run trace360 collect-control evidence_engine\controls\jira\idr-req-007.yaml --storage local
+```
+
+For `IDR-Req-007`, update the YAML file for your Jira Service Management Assets configuration before running against your organization:
+
+- `scope.schema_id`
+- `scope.object_type_id`
+- `scope.aql`
+- optional `scope.workspace_id`
+
 Run one Jira control and upload artifacts to GCS:
 
 ```bash
