@@ -175,6 +175,44 @@ The control command:
 - evaluates `expected.minimum_results`
 - returns `passed: true` or `passed: false`
 
+### Multiple JQL scopes in one control
+
+You can also define multiple JQL scopes and collect them into one combined artifact set.
+
+Example:
+
+```yaml
+id: CHANGE_AND_RISK_EVIDENCE
+request_id: IDR-Req-200
+
+name: Change and risk evidence
+description: Collect Jira evidence from multiple JQL scopes.
+
+connector: jira
+operation: search_issues
+
+scope:
+  jql_queries:
+    - name: change_requests
+      jql: 'summary ~ "change request" ORDER BY updated DESC'
+    - name: risk_updates
+      jql: 'summary ~ "risk update" ORDER BY updated DESC'
+
+expected:
+  minimum_results: 1
+
+evidence:
+  severity: medium
+  category: governance
+```
+
+How it behaves:
+
+- each JQL runs separately
+- all results are merged into one run
+- each normalized record keeps `query_scope_name` and `query_scope_jql`
+- source metadata includes per-scope counts
+
 ## CLI Options
 
 Current supported options:
@@ -254,20 +292,45 @@ result = engine.run(request)
 
 ## Artifact Layout
 
-Artifacts are written to a deterministic directory:
+Ad-hoc runs are written to:
 
 ```text
-.artifacts/<connector>/<yyyy>/<mm>/<dd>/<run_id>/
+.artifacts/ad-hoc/<connector>/<yyyy>/<mm>/<dd>/<run_id>/
 ```
 
-Example:
+Control-driven runs are written to:
 
 ```text
-.artifacts/jira/2026/04/20/<run_id>/
+.artifacts/<request_id>/<connector>/<yyyy>/<mm>/<dd>/<run_id>/
+```
+
+Example single-scope control:
+
+```text
+.artifacts/IDR-Req-027/jira/2026/04/29/<run_id>/
 ├── evidence.json
 ├── evidence.csv
 ├── hashes.json
 └── manifest.json
+```
+
+Example multi-scope control:
+
+```text
+.artifacts/IDR-Req-200/jira/2026/04/29/<run_id>/
+├── control-summary.json
+├── control-hashes.json
+└── scopes/
+    ├── change_requests/
+    │   ├── evidence.json
+    │   ├── evidence.csv
+    │   ├── hashes.json
+    │   └── manifest.json
+    └── risk_updates/
+        ├── evidence.json
+        ├── evidence.csv
+        ├── hashes.json
+        └── manifest.json
 ```
 
 ## Artifact Meanings
@@ -314,6 +377,34 @@ Contains:
 - hash values known at manifest creation time
 
 `manifest.json` is written last so the run never reports a completed manifest before the other artifacts exist.
+
+Each manifest also includes metadata fields useful for future retrieval, such as:
+
+- `request_id`
+- `control_id`
+- `control_name`
+- `operation`
+- `scope_name`
+- `scope_query`
+
+### `control-summary.json`
+
+For multi-scope controls, this file contains:
+
+- request id
+- control id
+- run id
+- total record count
+- per-scope counts
+- per-scope artifact locations
+- overall pass/fail
+
+### `control-hashes.json`
+
+For multi-scope controls, this file records SHA-256 hashes for:
+
+- each scope artifact written under `scopes/`
+- `control-summary.json`
 
 ## Jira Notes
 

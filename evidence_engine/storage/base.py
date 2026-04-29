@@ -8,6 +8,5 @@ class BaseStorageBackend(ABC):
     name: str
 
     @abstractmethod
-    def store(self, connector: str, run_id: str, artifact_dir: Path, artifact_paths: dict[str, Path]) -> dict[str, str]:
+    def store(self, artifact_root_dir: Path, artifact_paths: dict[str, Path], storage_prefix: str) -> dict[str, str]:
         raise NotImplementedError
-

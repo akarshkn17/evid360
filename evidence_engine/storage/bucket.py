@@ -20,13 +20,13 @@ class BucketStorageBackend(BaseStorageBackend):
             ) from exc
         self._client = storage.Client()
 
-    def store(self, connector: str, run_id: str, artifact_dir: Path, artifact_paths: dict[str, Path]) -> dict[str, str]:
+    def store(self, artifact_root_dir: Path, artifact_paths: dict[str, Path], storage_prefix: str) -> dict[str, str]:
         bucket = self._client.bucket(self._config.bucket_name)
         stored_locations: dict[str, str] = {}
-        prefix = f"{connector}/{run_id}"
         try:
             for name, path in artifact_paths.items():
-                blob_name = f"{prefix}/{path.name}"
+                relative_path = path.relative_to(artifact_root_dir).as_posix()
+                blob_name = f"{storage_prefix}/{relative_path}" if storage_prefix else relative_path
                 blob = bucket.blob(blob_name)
                 blob.upload_from_filename(str(path))
                 stored_locations[name] = f"gs://{self._config.bucket_name}/{blob_name}"

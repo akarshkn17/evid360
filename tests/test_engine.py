@@ -45,7 +45,7 @@ class FakeRegistry(ConnectorRegistry):
 class FakeStorage(BaseStorageBackend):
     name = "local"
 
-    def store(self, connector: str, run_id: str, artifact_dir: Path, artifact_paths: dict[str, Path]) -> dict[str, str]:
+    def store(self, artifact_root_dir: Path, artifact_paths: dict[str, Path], storage_prefix: str) -> dict[str, str]:
         return {name: str(path) for name, path in artifact_paths.items()}
 
 
@@ -61,6 +61,7 @@ def test_engine_run_writes_artifacts(tmp_path: Path) -> None:
         query="collect demo evidence",
         output_formats=["json", "csv"],
         storage_backend=StorageBackendType.LOCAL,
+        metadata={"request_id": "IDR-Req-001"},
     )
 
     result = engine.run(request)
@@ -70,3 +71,23 @@ def test_engine_run_writes_artifacts(tmp_path: Path) -> None:
     assert "evidence.csv" in result.artifact_paths
     assert "manifest.json" in result.artifact_paths
     assert Path(result.artifact_paths["manifest.json"]).exists()
+    assert "IDR-Req-001" in result.artifact_root_dir
+
+
+def test_engine_run_uses_ad_hoc_root_when_request_id_missing(tmp_path: Path) -> None:
+    config = AppConfig(local_artifact_root=tmp_path)
+    engine = EvidenceEngine(
+        config=config,
+        registry=FakeRegistry(),
+        storage_factory=lambda storage_backend: FakeStorage(),
+    )
+    request = EvidenceRequest(
+        connector="fake",
+        query="collect demo evidence",
+        output_formats=["json"],
+        storage_backend=StorageBackendType.LOCAL,
+    )
+
+    result = engine.run(request)
+
+    assert "ad-hoc" in result.artifact_root_dir

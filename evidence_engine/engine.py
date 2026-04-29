@@ -30,8 +30,15 @@ class EvidenceEngine:
         self._storage_factory = storage_factory or self._default_storage_factory
         self._artifact_service = ArtifactService(self._config.local_artifact_root)
 
-    def run(self, request: EvidenceRequest) -> EvidenceRunResult:
-        run_context = RunContext()
+    def run(
+        self,
+        request: EvidenceRequest,
+        *,
+        run_context: RunContext | None = None,
+        artifact_subdir: str | None = None,
+        upload: bool = True,
+    ) -> EvidenceRunResult:
+        run_context = run_context or RunContext()
         self._log(
             "engine_start",
             run_context,
@@ -51,15 +58,15 @@ class EvidenceEngine:
             run_context=run_context,
             collection_result=collection_result,
             log_event=self._log,
+            artifact_subdir=artifact_subdir,
         )
 
-        storage_backend = self._storage_factory(request.storage_backend)
+        storage_backend = self._storage_factory(request.storage_backend) if upload else LocalStorageBackend()
         self._log("storage_start", run_context, request.connector, storage_backend=storage_backend.name)
         storage_locations = storage_backend.store(
-            request.connector,
-            run_context.run_id,
-            artifact_result.artifact_dir,
+            artifact_result.artifact_root_dir,
             artifact_result.artifact_paths,
+            artifact_result.storage_prefix,
         )
         self._log("storage_complete", run_context, request.connector, stored_artifact_count=len(storage_locations))
 
@@ -69,7 +76,7 @@ class EvidenceEngine:
             run_context,
             request.connector,
             record_count=len(collection_result.records),
-            artifact_dir=str(artifact_result.artifact_dir.resolve()),
+            artifact_dir=str(artifact_result.artifact_root_dir.resolve()),
             completed_at=completed_at,
         )
         return EvidenceRunResult(
@@ -79,10 +86,20 @@ class EvidenceEngine:
             completed_at=completed_at,
             record_count=len(collection_result.records),
             storage_backend=storage_backend.name,
+            artifact_root_dir=str(artifact_result.artifact_root_dir.resolve()),
             artifact_dir=str(artifact_result.artifact_dir.resolve()),
             artifact_paths={name: str(path.resolve()) for name, path in artifact_result.artifact_paths.items()},
             storage_locations=storage_locations,
             hashes=artifact_result.hashes,
+            metadata={
+                "request_id": request.metadata.get("request_id"),
+                "control_id": request.metadata.get("control_id"),
+                "operation": request.metadata.get("operation"),
+                "scope_name": request.metadata.get("scope_name"),
+                "scope_query": request.metadata.get("scope_query"),
+                "storage_prefix": artifact_result.storage_prefix,
+                "artifact_subdir": artifact_subdir,
+            },
         )
 
     def _default_storage_factory(self, storage_backend: StorageBackendType) -> BaseStorageBackend:

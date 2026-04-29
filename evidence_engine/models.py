@@ -101,6 +101,7 @@ class RunManifest(BaseModel):
     storage_backend: str
     hash_algorithm: str
     hashes: dict[str, str]
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class EvidenceRunResult(BaseModel):
@@ -110,10 +111,12 @@ class EvidenceRunResult(BaseModel):
     completed_at: str
     record_count: int
     storage_backend: str
+    artifact_root_dir: str
     artifact_dir: str
     artifact_paths: dict[str, str]
     storage_locations: dict[str, str]
     hashes: dict[str, str]
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class RunContext(BaseModel):

@@ -46,6 +46,10 @@ class JiraCollector(BaseCollector):
         return self._collect_issues(request, run_context)
 
     def _collect_issues(self, request: EvidenceRequest, run_context: RunContext) -> CollectionResult:
+        query_scopes = _query_scopes(request)
+        if query_scopes:
+            return self._collect_issue_scopes(request, run_context, query_scopes)
+
         page_size = request.page_size or self._app_config.jira_page_size
         raw_issues, source_metadata = self._client.search_issues(
             jql=request.query,
@@ -64,6 +68,65 @@ class JiraCollector(BaseCollector):
             records=records,
             source_metadata=source_metadata,
             raw_records=raw_issues,
+            csv_attribute_fields=CSV_ATTRIBUTE_FIELDS,
+        )
+
+    def _collect_issue_scopes(
+        self,
+        request: EvidenceRequest,
+        run_context: RunContext,
+        query_scopes: list[dict[str, str]],
+    ) -> CollectionResult:
+        page_size = request.page_size or self._app_config.jira_page_size
+        records = []
+        raw_records: list[dict[str, object]] = []
+        scope_results: list[dict[str, object]] = []
+
+        for index, scope in enumerate(query_scopes, start=1):
+            scope_name = scope.get("name") or f"scope_{index}"
+            scope_jql = scope["jql"]
+            raw_issues, scope_metadata = self._client.search_issues(
+                jql=scope_jql,
+                fields=self.default_fields,
+                expand=request.expand_fields,
+                page_size=page_size,
+            )
+            records.extend(
+                normalize_issue(
+                    issue,
+                    run_context.started_at,
+                    query_scope_name=scope_name,
+                    query_scope_jql=scope_jql,
+                )
+                for issue in raw_issues
+            )
+            raw_records.extend(
+                {
+                    "scope_name": scope_name,
+                    "scope_jql": scope_jql,
+                    "record": issue,
+                }
+                for issue in raw_issues
+            )
+            scope_results.append(
+                {
+                    "name": scope_name,
+                    "jql": scope_jql,
+                    "record_count": len(raw_issues),
+                    **scope_metadata,
+                }
+            )
+
+        return CollectionResult(
+            records=records,
+            source_metadata={
+                "query": request.query,
+                "fetched_at": run_context.started_at_iso,
+                "source_system": self.name,
+                "query_scopes": scope_results,
+                "scope_count": len(scope_results),
+            },
+            raw_records=raw_records,
             csv_attribute_fields=CSV_ATTRIBUTE_FIELDS,
         )
 
@@ -112,3 +175,21 @@ def _optional_int(value: object) -> int | None:
     if value in (None, ""):
         return None
     return int(value)
+
+
+def _query_scopes(request: EvidenceRequest) -> list[dict[str, str]]:
+    raw_scopes = request.metadata.get("jql_queries")
+    if not isinstance(raw_scopes, list):
+        return []
+    scopes: list[dict[str, str]] = []
+    for item in raw_scopes:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        jql = item.get("jql")
+        if isinstance(jql, str) and jql.strip():
+            scope: dict[str, str] = {"jql": jql}
+            if isinstance(name, str) and name.strip():
+                scope["name"] = name
+            scopes.append(scope)
+    return scopes

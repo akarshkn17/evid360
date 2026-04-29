@@ -1,0 +1,22 @@
+id: CHANGE_AND_RISK_EVIDENCE
+request_id: IDR-Req-200
+
+name: Change and risk evidence
+description: Collect Jira evidence from multiple JQL scopes.
+
+connector: jira
+operation: search_issues
+
+scope:
+  jql_queries:
+    - name: change_requests
+      jql: 'summary ~ "onboarding" ORDER BY updated DESC'
+    - name: risk_updates
+      jql: 'summary ~ "risk update" ORDER BY updated DESC'
+
+expected:
+  minimum_results: 1
+
+evidence:
+  severity: medium
+  category: governance

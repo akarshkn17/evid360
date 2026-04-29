@@ -96,21 +96,29 @@ print(result.artifact_paths)
 
 ## Artifact Output
 
-Artifacts are written into a deterministic run directory:
+Ad-hoc runs are written into:
 
 ```text
-.artifacts/<connector>/<yyyy>/<mm>/<dd>/<run_id>/
+.artifacts/ad-hoc/<connector>/<yyyy>/<mm>/<dd>/<run_id>/
 ```
 
-Typical output:
+Control-driven runs are written into:
 
 ```text
-.artifacts/jira/2026/04/20/<run_id>/
+.artifacts/<request_id>/<connector>/<yyyy>/<mm>/<dd>/<run_id>/
+```
+
+Typical single-scope output:
+
+```text
+.artifacts/IDR-Req-027/jira/2026/04/29/<run_id>/
 ├── evidence.json
 ├── evidence.csv
 ├── hashes.json
 └── manifest.json
 ```
+
+Multi-scope controls additionally create `control-summary.json`, `control-hashes.json`, and `scopes/<scope_name>/...` subfolders.
 
 `evidence.json` contains request metadata, normalized evidence records, and source metadata. `evidence.csv` contains a tabular view of the normalized records. `hashes.json` records SHA-256 hashes for generated evidence artifacts. `manifest.json` captures the run summary and file inventory.
 

@@ -7,6 +7,8 @@ from evidence_engine.models import BaseEvidenceRecord
 
 
 CSV_ATTRIBUTE_FIELDS = [
+    "query_scope_name",
+    "query_scope_jql",
     "issue_id",
     "project_key",
     "project_name",
@@ -31,7 +33,13 @@ ASSET_CSV_ATTRIBUTE_FIELDS = [
 ]
 
 
-def normalize_issue(issue: dict[str, Any], collected_at: datetime) -> BaseEvidenceRecord:
+def normalize_issue(
+    issue: dict[str, Any],
+    collected_at: datetime,
+    *,
+    query_scope_name: str | None = None,
+    query_scope_jql: str | None = None,
+) -> BaseEvidenceRecord:
     fields = issue.get("fields", {})
     assignee = fields.get("assignee") or {}
     status = fields.get("status") or {}
@@ -55,6 +63,8 @@ def normalize_issue(issue: dict[str, Any], collected_at: datetime) -> BaseEviden
         raw_ref=issue.get("self"),
         collected_at=collected_at.astimezone(UTC).isoformat(),
         attributes={
+            "query_scope_name": query_scope_name,
+            "query_scope_jql": query_scope_jql,
             "issue_id": issue.get("id"),
             "project_key": project.get("key"),
             "project_name": project.get("name"),

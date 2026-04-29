@@ -13,6 +13,7 @@ def build_manifest(
     record_count: int,
     storage_backend: str,
     hashes: dict[str, str],
+    metadata: dict[str, object] | None = None,
 ) -> RunManifest:
     return RunManifest(
         run_id=run_id,
@@ -24,5 +25,5 @@ def build_manifest(
         storage_backend=storage_backend,
         hash_algorithm="sha256",
         hashes=hashes,
+        metadata=metadata or {},
     )
-
